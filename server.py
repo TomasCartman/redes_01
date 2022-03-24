@@ -40,8 +40,8 @@ class Server:
                                 self.writers.append(s)
                             else:
                                 pass
-                                #s.close()
-                                #self.readers.remove(s)
+                                # s.close()
+                                # self.readers.remove(s)
 
                     except Exception as err:
                         self.readers.remove(s)
@@ -67,6 +67,11 @@ class Server:
             print('Keyboard interrupt')
 
 
+server = Server()
+server.prepare_for_connection()
+server.run()
+server.server_socket.close()
+
 '''
     def accept_connection(self):
         client_socket, address = self.server_socket.accept()
@@ -89,11 +94,6 @@ class Server:
         #    data = self.
 '''
 
-
-server = Server()
-server.prepare_for_connection()
-server.run()
-server.server_socket.close()
 
 '''
 def accept_connection(s):

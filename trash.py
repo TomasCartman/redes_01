@@ -21,7 +21,7 @@ class Trash:
         except Exception as err:
             print('An error occurred while trying to connect to the server: ', err)
 
-    # A check must take place (is the socket connected?) before trying to disconnect | Not using
+    # A check must take place (is the socket connected?) before trying to disconnect
     def disconnect(self):
         self.trash_socket.close()
 
@@ -65,6 +65,8 @@ t = Trash()
 t.connect()
 t.run()
 t.disconnect()
+
+
 # t.connect()
 # t.send_message_to_server(bytes('Testing...', "utf-8"))
 # response = t.receive_message_from_server()
