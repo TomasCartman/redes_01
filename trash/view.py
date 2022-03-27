@@ -6,10 +6,12 @@ root = tk.Tk()
 
 
 class TrashApp(tk.Frame):
-    def __init__(self, master):
+    def __init__(self, master, bridge_callback):
         super().__init__(master)
+        self.bridge_callback = bridge_callback
         self.actual_trash = 0
         self.trash_capacity = 0
+        self.is_trash_locked = False
 
         self.pack()
 
@@ -45,11 +47,10 @@ class TrashApp(tk.Frame):
         self.entrythingy.bind('<Key-Return>', self._set_trash_capacity)
 
     def _set_trash_capacity(self, event):
-        # print("Hi. The current entry content is:", self.trash_capacity_stringVar.get())
         if self._is_capacity_valid():
             self.trash_capacity = int(self.trash_capacity_stringVar.get())
             self.trash_capacity_label['text'] = 'Capacidade máxima de lixo: ' + str(self.trash_capacity)
-            print('True')
+            self._bridge_callback()
 
     def _is_capacity_valid(self):
         if not TrashApp._check_int(self.trash_capacity_stringVar.get()):
@@ -68,10 +69,12 @@ class TrashApp(tk.Frame):
         if self._is_possible_to_put_more_trash():
             self.actual_trash += 1
             self._change_actual_trash_label()
+            self._bridge_callback()
 
     def clear_trash_button_callback(self):
         self.actual_trash = 0
         self._change_actual_trash_label()
+        self._bridge_callback()
 
     def _change_actual_trash_label(self):
         self.actual_trash_label['text'] = 'Quantidade de lixo atual: ' + str(self.actual_trash)
@@ -81,8 +84,13 @@ class TrashApp(tk.Frame):
             return True
         return False
 
+    def _bridge_callback(self):
+        self.bridge_callback(self.trash_capacity, self.actual_trash, self.is_trash_locked)
+
     def lock_trash_button_callback(self):
         self.put_trash_button.state(['disabled'])
+        self.is_trash_locked = True
+        self._bridge_callback()
 
     @staticmethod
     def _check_int(string):
@@ -93,5 +101,5 @@ class TrashApp(tk.Frame):
             return False
 
 
-myapp = TrashApp(root)
-myapp.mainloop()
+# myapp = TrashApp(root)
+# myapp.mainloop()

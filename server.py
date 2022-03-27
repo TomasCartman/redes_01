@@ -1,6 +1,7 @@
 import socket
 import select
 import time
+import pickle
 
 HOST = ''
 PORT = 50007
@@ -23,7 +24,7 @@ class Server:
     def run(self):
         try:
             while True:
-                time.sleep(1.5)
+                #time.sleep(1.5)
                 readable, writeable, exceptional = select.select(self.readers,  self.writers, self.readers, 0.5)
 
                 for s in readable:
@@ -36,8 +37,10 @@ class Server:
                         else:
                             data = s.recv(CHUNK_SIZE)
                             if data:
-                                print('Recv')
-                                self.writers.append(s)
+                                obj = pickle.loads(data)
+                                print(f'Recv from ?')
+                                print(obj)
+                                # self.writers.append(s)
                             else:
                                 pass
                                 # s.close()

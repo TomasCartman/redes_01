@@ -1,5 +1,6 @@
 import socket
 import select
+from threading import Thread
 import time
 
 HOST = '127.0.0.1'
@@ -12,6 +13,7 @@ class Trash:
         self.trash_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.inputs = []
         self.outputs = [self.trash_socket]
+        self.message = ''
 
     def connect(self):
         try:
@@ -26,8 +28,11 @@ class Trash:
         self.trash_socket.close()
 
     def send_message_to_server(self, s, message):
-        s.sendall(bytes(message, "utf-8"))
-        print('Sending')
+        if type(message) is not bytes:
+            message = bytes(message, "utf-8")
+        s.sendall(message)
+        print(f'Sending: {message}')
+        self.message = ''
         self.outputs.remove(s)
         self.inputs.append(s)
 
@@ -35,7 +40,7 @@ class Trash:
         try:
             server_response = s.recv(CHUNK_SIZE)
             self.inputs.remove(s)
-            self.outputs.append(s)
+            # self.outputs.append(s)
             if server_response:
                 return server_response.decode("utf-8")
         except Exception as err:
@@ -43,29 +48,38 @@ class Trash:
             self.disconnect()
 
     def run(self):
+        t1 = Thread(target=self._run)
+        t1.start()
+
+    def _run(self):
         try:
             while True:
-                time.sleep(1.5)
+                # time.sleep(1.5)
+                if self.message:
+                    self.outputs.append(self.trash_socket)
                 readable, writeable, exceptional = select.select(self.inputs, self.outputs, self.inputs, 0.5)
 
                 for s in writeable:
-                    self.send_message_to_server(s, 'Testing...\n')
+                    self.send_message_to_server(s, self.message)
 
                 for s in readable:
-                    data = self.receive_message_from_server(s)
-                    print('recv')
+                    if s == self.trash_socket:
+                        data = self.receive_message_from_server(s)
+                        print(data)
 
                 for s in exceptional:
                     pass
         except KeyboardInterrupt:
             print('Keyboard interrupt')
+            self.disconnect()
 
 
+'''
 t = Trash()
 t.connect()
 t.run()
 t.disconnect()
-
+'''
 
 # t.connect()
 # t.send_message_to_server(bytes('Testing...', "utf-8"))
