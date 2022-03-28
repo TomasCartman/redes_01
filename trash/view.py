@@ -2,40 +2,36 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter.messagebox import showerror
 
-root = tk.Tk()
 
-
-class TrashApp(tk.Frame):
-    def __init__(self, master, bridge_callback):
-        super().__init__(master)
+class TrashApp(tk.Tk):
+    def __init__(self, bridge_callback):
+        super().__init__()
         self.bridge_callback = bridge_callback
         self.actual_trash = 0
         self.trash_capacity = 0
         self.is_trash_locked = False
 
-        self.pack()
-
-        # Sets main attributes
-        self.master.title('Lixeira')
-        self.master.geometry('600x400+50+50')
-        self.master.resizable(False, False)
+        # Set main attributes
+        self.title('Lixeira')
+        self.geometry('600x400+50+50')
+        self.resizable(False, False)
 
         # Entry
         self.entrythingy = tk.Entry()
         self.entrythingy.pack()
 
         # Labels
-        self.trash_capacity_label = ttk.Label(self.master, text='Capacidade máxima de lixo: 0')
+        self.trash_capacity_label = ttk.Label(self, text='Capacidade máxima de lixo: 0')
         self.trash_capacity_label.pack(ipadx=10, ipady=10)
-        self.actual_trash_label = ttk.Label(self.master, text='Quantidade de lixo atual: 0')
+        self.actual_trash_label = ttk.Label(self, text='Quantidade de lixo atual: 0')
         self.actual_trash_label.pack(ipadx=10, ipady=10)
 
         # Buttons
-        self.put_trash_button = ttk.Button(self.master, text='Adicionar lixo', command=self.put_trash_button_callback)
+        self.put_trash_button = ttk.Button(self, text='Adicionar lixo', command=self._put_trash_button_callback)
         self.put_trash_button.pack(ipadx=5, ipady=5, expand=False)
-        self.clear_trash_button = ttk.Button(self.master, text='Esvaziar lixeira', command=self.clear_trash_button_callback)
+        self.clear_trash_button = ttk.Button(self, text='Esvaziar lixeira', command=self.clear_trash_button_callback)
         self.clear_trash_button.pack(ipadx=5, ipady=5, expand=False)
-        self.lock_trash_button = ttk.Button(self.master, text='Travar lixeira', command=self.lock_trash_button_callback)
+        self.lock_trash_button = ttk.Button(self, text='Travar lixeira', command=self.lock_trash_button_callback)
         self.lock_trash_button.pack(ipadx=5, ipady=5, expand=False)
 
         # String Variable
@@ -65,7 +61,7 @@ class TrashApp(tk.Frame):
             return False
         return True
 
-    def put_trash_button_callback(self):
+    def _put_trash_button_callback(self):
         if self._is_possible_to_put_more_trash():
             self.actual_trash += 1
             self._change_actual_trash_label()
@@ -87,6 +83,7 @@ class TrashApp(tk.Frame):
     def _bridge_callback(self):
         self.bridge_callback(self.trash_capacity, self.actual_trash, self.is_trash_locked)
 
+    # Change lock to toggle or create two functions (lock and unlock)
     def lock_trash_button_callback(self):
         self.put_trash_button.state(['disabled'])
         self.is_trash_locked = True
@@ -101,5 +98,5 @@ class TrashApp(tk.Frame):
             return False
 
 
-# myapp = TrashApp(root)
+# myapp = TrashApp()
 # myapp.mainloop()

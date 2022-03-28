@@ -6,7 +6,7 @@ import pickle
 class Bridge:
     def __init__(self):
         self.main_trash = trash.Trash()
-        self.main_view = view.TrashApp(view.root, self.on_view_change_callback)
+        self.main_view = view.TrashApp(self.on_view_change_callback)
 
     def on_view_change_callback(self, trash_capacity, trash_filled, trash_status):
         print(f'trash_capacity: {trash_capacity} and trash_filled: {trash_filled}; trash is locked: {trash_status}')
@@ -33,8 +33,6 @@ class Bridge:
         self.main_view.mainloop()
 
     def run(self):
-        #t1 = Thread(target=self.trash_connect_and_run)
-        #t1.start()
         self.trash_connect_and_run()
         self.start_view_main_loop()
 
