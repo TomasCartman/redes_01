@@ -4,12 +4,15 @@ from tkinter.messagebox import showerror
 
 
 class TrashApp(tk.Tk):
-    def __init__(self, bridge_callback):
+    def __init__(self, bridge_callback, bridge_on_close_window_callback):
         super().__init__()
         self.bridge_callback = bridge_callback
         self.actual_trash = 0
         self.trash_capacity = 0
         self.is_trash_locked = False
+        self.bridge_on_close_window_callback = bridge_on_close_window_callback
+
+        self.protocol('WM_DELETE_WINDOW', self._close_button)
 
         # Set main attributes
         self.title('Lixeira')
@@ -41,6 +44,10 @@ class TrashApp(tk.Tk):
 
         # Binds
         self.entrythingy.bind('<Key-Return>', self._set_trash_capacity)
+
+    def _close_button(self):
+        self.bridge_on_close_window_callback()
+        self.destroy()
 
     def _set_trash_capacity(self, event):
         if self._is_capacity_valid():
