@@ -35,18 +35,14 @@ class Trash:
         self.unlock_callback()
 
     def send_message_to_server(self, s, message):
-        if type(message) is not bytes:  # Remove this (?)
-            message = bytes(message, "utf-8")
         s.sendall(message)
         print(f'Sending: {message}')
         self.message = ''
         self.outputs.remove(s)
-        #  self.inputs.append(s)
 
     def receive_message_from_server(self, s):
         try:
             server_response = s.recv(config.CHUNK_SIZE)
-            #  self.inputs.remove(s)
             if server_response:
                 response_decoded = server_response.decode("utf-8")
                 return json.loads(response_decoded)
@@ -79,7 +75,7 @@ class Trash:
                 self.send_message_to_server(s, self.message)
 
             for s in readable:
-                if s == self.trash_socket and s.fileno() > 0:  # Test this
+                if s == self.trash_socket and s.fileno() > 0:
                     data = self.receive_message_from_server(s)
                     print(data)
                     if data['type'] == 'lock':

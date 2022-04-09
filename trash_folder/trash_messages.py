@@ -1,8 +1,8 @@
 import json
-import utils
+from client_folder import utils
 
 
-def load_object_start_on_json():
+def dumps_object_start_on_json():
     start_info = {
         'type': 'start',
         'sender': 'trash',
@@ -12,7 +12,7 @@ def load_object_start_on_json():
     return obj.encode("utf-8")
 
 
-def load_object_update_on_json(trash_capacity, trash_filled, trash_status):
+def dumps_object_update_on_json(trash_capacity, trash_filled, trash_status):
     update_info = {
         'type': 'update',
         'sender': 'trash',
@@ -25,7 +25,7 @@ def load_object_update_on_json(trash_capacity, trash_filled, trash_status):
     return obj.encode("utf-8")
 
 
-def load_object_close_on_json():
+def dumps_object_close_on_json():
     close_info = {
         'type': 'close',
         'sender': 'trash',

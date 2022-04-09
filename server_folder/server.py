@@ -72,6 +72,7 @@ class Server:
             client['id'] = self._number_of_clients
             self.trash_clients.append(client)
         else:
+            print('truck connected')
             self.truck_clients.append(client)
 
     def handle_close_of_client(self, obj, sock):

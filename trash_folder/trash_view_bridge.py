@@ -1,12 +1,12 @@
 import time
-import trash
+import trash_folder
 import view
 import trash_messages
 
 
 class Bridge:
     def __init__(self):
-        self.main_trash = trash.Trash(self.on_server_order_to_lock, self.on_server_order_to_unlock)
+        self.main_trash = trash_folder.Trash(self.on_server_order_to_lock, self.on_server_order_to_unlock)
         self.main_view = view.TrashApp(self.on_view_change_callback, self.on_close_window_callback)
 
     def on_view_change_callback(self, trash_capacity, trash_filled, trash_status):
@@ -14,15 +14,15 @@ class Bridge:
         self.send_message_update_to_server(trash_capacity, trash_filled, trash_status)
 
     def send_message_update_to_server(self, trash_capacity, trash_filled, trash_status):
-        obj = trash_messages.load_object_update_on_json(trash_capacity, trash_filled, trash_status)
+        obj = trash_messages.dumps_object_update_on_json(trash_capacity, trash_filled, trash_status)
         self.main_trash.message = obj
 
     def send_message_start_to_server(self):
-        obj = trash_messages.load_object_start_on_json()
+        obj = trash_messages.dumps_object_start_on_json()
         self.main_trash.message = obj
 
     def send_message_close_to_server(self):
-        obj = trash_messages.load_object_close_on_json()
+        obj = trash_messages.dumps_object_close_on_json()
         self.main_trash.message = obj
 
     def on_close_window_callback(self):

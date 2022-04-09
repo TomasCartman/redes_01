@@ -1,5 +1,5 @@
 import tkinter as tk
-import utils
+from client_folder import utils
 from tkinter import ttk
 from tkinter.messagebox import showerror
 
