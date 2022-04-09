@@ -1,24 +1,7 @@
-import re
 import select
 import socket
-import uuid
+import config
 from threading import Thread
-
-HOST = '127.0.0.1'
-# HOST = '25.69.73.100'
-PORT = 50007
-CHUNK_SIZE = 2048
-
-
-def get_ip_address():
-    hostname = socket.gethostname()
-    ip_address = socket.gethostbyname(hostname)
-    return ip_address
-
-
-def get_mac_address():
-    mac = ':'.join(re.findall('..', '%012x' % uuid.getnode()))
-    return mac
 
 
 class Trash:
@@ -31,8 +14,8 @@ class Trash:
 
     def connect(self):
         try:
-            self.trash_socket.connect((HOST, PORT))
-            print(f'Connect at {HOST}:{PORT}')
+            self.trash_socket.connect((config.HOST, config.PORT))
+            print(f'Connect at {config.HOST}:{config.PORT}')
             self.trash_socket.setblocking(False)
             self.inputs.append(self.trash_socket)
         except Exception as err:
@@ -43,7 +26,7 @@ class Trash:
         self.trash_socket.close()
 
     def send_message_to_server(self, s, message):
-        if type(message) is not bytes:
+        if type(message) is not bytes:  # Remove this (?)
             message = bytes(message, "utf-8")
         s.sendall(message)
         print(f'Sending: {message}')
@@ -53,7 +36,7 @@ class Trash:
 
     def receive_message_from_server(self, s):
         try:
-            server_response = s.recv(CHUNK_SIZE)
+            server_response = s.recv(config.CHUNK_SIZE)
             self.inputs.remove(s)
             if server_response:
                 return server_response.decode("utf-8")
@@ -76,9 +59,6 @@ class Trash:
 
     def _run(self):
         while True:
-            if self.thread1 is None:
-                break
-
             if self.message:
                 self.outputs.append(self.trash_socket)
             readable, writeable, exceptional = select.select(self.inputs, self.outputs, self.inputs, 0.5)
@@ -98,3 +78,6 @@ class Trash:
                     self.inputs.remove(s)
                 if s in self.outputs:
                     self.outputs.remove(s)
+
+            if self.thread1 is None:
+                break

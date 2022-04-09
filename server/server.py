@@ -1,49 +1,52 @@
 import socket
 import select
 import json
-import os
+import config
+import utils
 from threading import Thread
-
-HOST = ''
-PORT = 50007
-CHUNK_SIZE = 2048
-
-
-def clear_terminal():
-    os.system('cls' if os.name == 'nt' else 'clear')
 
 
 class Server:
     def __init__(self):
         self.thread1 = None
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.clients = list()
+        self.trash_clients = list()
+        self.truck_clients = list()
+        self._number_of_clients = 0
         self.readers = [self.server_socket]
         self.writers = list()
         self.command_list = ['clientes', 'sair', 'travar', 'help', 'socket']
 
     def prepare_for_connection(self):
-        self.server_socket.bind((HOST, PORT))
+        self.server_socket.bind((config.HOST, config.PORT))
         self.server_socket.setblocking(False)
         self.server_socket.listen()
-        print(f'Listing to port {PORT}')
+        print(f'Listing to port {config.PORT}')
 
     def disconnect(self):
         self.thread1 = None
+        self.close_all_connections()
         self.server_socket.close()
 
+    def close_all_connections(self):  # Test this
+        for c in self.readers:
+            c.close()
+
+    '''
     def filter_clients(self):
-        for c in self.clients:
+        for c in self.trash_clients:
             if c['client_socket'].fileno() < 0:
-                self.clients.remove(c)
+                self.trash_clients.remove(c)
+    '''
 
     def list_clients(self):
         clients = []
         counter = 0
-        for c in self.clients:
-            if c['mac'] != '':
+        for c in self.trash_clients:
+            if 'trash' in c:
                 counter += 1
                 client = {
+                    'id': c['id'],
                     'ip_address': c['address'],
                     'mac': c['mac'],
                     'trash_capacity': c['trash']['trash_capacity'],
@@ -57,10 +60,47 @@ class Server:
         clients, number_of_clients = self.list_clients()
         print(f'Clientes: [{number_of_clients}]\n')
         for c in clients:
-            trash_percentage = (c["trash_filled"]/c["trash_capacity"])*100
+            trash_percentage = (c["trash_filled"] / c["trash_capacity"]) * 100
+            print(f'Id: {c["id"]}')
             print(f'Address: {c["ip_address"]} ou Mac: {c["mac"]}')
             print(f'Lixeira {trash_percentage:,.2f}% cheia ({c["trash_filled"]}/{c["trash_capacity"]})')
             print(f'Lixeira {"travada" if c["trash_status"] else "destravada"}\n')
+
+    def handle_start_of_client(self, obj, sock):
+        print('Start of client')
+        client = {
+            'client_socket': sock,
+            'address': sock.getpeername()[0],
+            'mac': obj['mac']
+        }
+        if obj['sender'] == 'trash':
+            self._number_of_clients += 1
+            client['id'] = self._number_of_clients
+            self.trash_clients.append(client)
+        else:
+            self.truck_clients.append(client)
+
+    def handle_close_of_client(self, obj, sock):
+        print('Close of client')
+        self.readers.remove(sock)
+        if obj['sender'] == 'trash':
+            for i in range(len(self.trash_clients)):
+                if self.trash_clients[i]['client_socket'] == sock:
+                    del self.trash_clients[i]
+                    break
+        else:
+            self.truck_clients.pop()
+
+    # Only the trash updates the server, so there's no need to verify if it's a truck or trash
+    def handle_update_of_client(self, obj, sock):
+        print('Update of client')
+        res = next(item for item in self.trash_clients if item['client_socket'] == sock)
+        if res:
+            res['trash'] = {
+                'trash_capacity': obj['trash_capacity'],
+                'trash_filled': obj['trash_filled'],
+                'trash_status': obj['trash_status'],
+            }
 
     def run(self):
         try:
@@ -69,17 +109,16 @@ class Server:
             while True:
                 command = str(input('Digite o comando: \n')).lower()
                 if command in self.command_list:
-                    clear_terminal()
+                    utils.clear_terminal()
                     if command == 'sair':
                         print('Fechando conexão...\n')
                         self.disconnect()
                         break
                     elif command == 'clientes':
-                        self.filter_clients()
                         self.print_clients()
                         print('\n')
                     elif command == 'socket':
-                        print(self.clients)
+                        print(self.trash_clients)
 
                 else:
                     print('Comando não encontrado.\n')
@@ -99,21 +138,23 @@ class Server:
 
             for s in readable:
                 try:
+                    # If the server socket is readable (means that there's a connection to accept)
                     if s == self.server_socket:
                         client_socket, address = s.accept()
                         client_socket.setblocking(False)
-                        client = {
-                            'client_socket': client_socket,
-                            'address': address[0],
-                            'mac': ''
-                        }
                         print(f'Connection from: {address[0]}:{address[1]}')
-                        self.clients.append(client)
                         self.readers.append(client_socket)
-                    else:
-                        data = s.recv(CHUNK_SIZE)
+                    else:  # An already accepted client socket is sending a message
+                        data = s.recv(config.CHUNK_SIZE)
                         if data:
                             obj = json.loads(data)
+                            if obj['type'] == 'start':  # First contact of the server and client
+                                self.handle_start_of_client(obj, s)
+                            elif obj['type'] == 'update':  # A client known by the server is updating its status
+                                self.handle_update_of_client(obj, s)
+                            else:  # The last contact of the client with the server
+                                self.handle_close_of_client(obj, s)
+                            '''
                             if obj['sender'] == 'trash':
                                 mac = obj['mac']
                                 res = next(item for item in self.clients if item['client_socket'] == s)
@@ -126,6 +167,7 @@ class Server:
                                 print(obj)
                             else:  # Not a trash, so it's a truck
                                 pass
+                            '''
                         else:
                             pass
                             # s.close()
@@ -134,7 +176,7 @@ class Server:
                 except Exception as err:
                     self.readers.remove(s)
                     s.close()
-                    print(f'An error occurred: {err}')
+                    print(f'An error occurred (readable): {err}')
                 finally:
                     pass
 
@@ -144,7 +186,7 @@ class Server:
                     print('Sending')
                     self.writers.remove(s)
                 except Exception as err:
-                    print(f'An error occurred: {err}')
+                    print(f'An error occurred (writable): {err}')
                 finally:
                     pass
 
@@ -156,4 +198,4 @@ if __name__ == '__main__':
     server = Server()
     server.prepare_for_connection()
     server.run()
-    server.disconnect()   # Remove this
+    server.disconnect()  # Remove this
