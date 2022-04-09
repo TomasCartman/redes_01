@@ -12,6 +12,7 @@ class TrashApp(tk.Tk):
         self.is_trash_locked = False
         self.bridge_on_close_window_callback = bridge_on_close_window_callback
 
+        # Close window event
         self.protocol('WM_DELETE_WINDOW', self._close_button)
 
         # Set main attributes
@@ -90,10 +91,14 @@ class TrashApp(tk.Tk):
     def _bridge_callback(self):
         self.bridge_callback(self.trash_capacity, self.actual_trash, self.is_trash_locked)
 
-    # Change lock to toggle or create two functions (lock and unlock)
     def lock_trash_button_callback(self):
         self.put_trash_button.state(['disabled'])
         self.is_trash_locked = True
+        self._bridge_callback()
+
+    def unlock_trash(self):
+        self.put_trash_button.state(['!disabled'])
+        self.is_trash_locked = False
         self._bridge_callback()
 
     @staticmethod

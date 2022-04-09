@@ -1,11 +1,24 @@
-import socket
+import re
 import select
+import socket
+import uuid
 from threading import Thread
 
-
 HOST = '127.0.0.1'
+# HOST = '25.69.73.100'
 PORT = 50007
 CHUNK_SIZE = 2048
+
+
+def get_ip_address():
+    hostname = socket.gethostname()
+    ip_address = socket.gethostbyname(hostname)
+    return ip_address
+
+
+def get_mac_address():
+    mac = ':'.join(re.findall('..', '%012x' % uuid.getnode()))
+    return mac
 
 
 class Trash:
@@ -13,7 +26,7 @@ class Trash:
         self.thread1 = None
         self.trash_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.inputs = []
-        self.outputs = [self.trash_socket]
+        self.outputs = []
         self.message = ''
 
     def connect(self):
@@ -21,10 +34,10 @@ class Trash:
             self.trash_socket.connect((HOST, PORT))
             print(f'Connect at {HOST}:{PORT}')
             self.trash_socket.setblocking(False)
+            self.inputs.append(self.trash_socket)
         except Exception as err:
             print('An error occurred while trying to connect to the server: ', err)
 
-    # A check must take place (is the socket connected?) before trying to disconnect
     def disconnect(self):
         self.thread1 = None
         self.trash_socket.close()
@@ -76,7 +89,7 @@ class Trash:
                 self.send_message_to_server(s, self.message)
 
             for s in readable:
-                if s == self.trash_socket:
+                if s == self.trash_socket and s.fileno() > 0:  # Test this
                     data = self.receive_message_from_server(s)
                     print(data)
 

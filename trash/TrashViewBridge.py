@@ -3,6 +3,18 @@ import view
 import json
 
 
+def load_object_on_json(trash_capacity, trash_filled, trash_status):
+    trash_info = {
+        'sender': 'trash',
+        'trash_capacity': trash_capacity,
+        'trash_filled': trash_filled,
+        'trash_status': trash_status,
+        'mac': trash.get_mac_address()
+    }
+    obj = json.dumps(trash_info)
+    return obj
+
+
 class Bridge:
     def __init__(self):
         self.main_trash = trash.Trash()
@@ -12,17 +24,8 @@ class Bridge:
         print(f'trash_capacity: {trash_capacity} and trash_filled: {trash_filled}; trash is locked: {trash_status}')
         self.send_message_to_server(trash_capacity, trash_filled, trash_status)
 
-    def load_object_on_json(self, trash_capacity, trash_filled, trash_status):
-        trash_info = {
-            'trash_capacity': trash_capacity,
-            'trash_filled': trash_filled,
-            'trash_status': trash_status
-        }
-        obj = json.dumps(trash_info)
-        return obj
-
     def send_message_to_server(self, trash_capacity, trash_filled, trash_status):
-        obj = self.load_object_on_json(trash_capacity, trash_filled, trash_status)
+        obj = load_object_on_json(trash_capacity, trash_filled, trash_status)
         self.main_trash.message = obj
 
     def on_close_window_callback(self):
@@ -41,5 +44,5 @@ class Bridge:
         self.start_view_main_loop()
 
 
-b = Bridge()
-b.run()
+if __name__ == '__main__':
+    Bridge().run()
