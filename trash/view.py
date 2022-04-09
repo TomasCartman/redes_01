@@ -1,4 +1,5 @@
 import tkinter as tk
+import utils
 from tkinter import ttk
 from tkinter.messagebox import showerror
 
@@ -57,7 +58,7 @@ class TrashApp(tk.Tk):
             self._bridge_callback()
 
     def _is_capacity_valid(self):
-        if not TrashApp._check_int(self.trash_capacity_stringVar.get()):
+        if not utils.is_int(self.trash_capacity_stringVar.get()):
             showerror('Erro', 'A capacidade digitada deve ser um número inteiro')
             return False
         capacity_typed = int(self.trash_capacity_stringVar.get())
@@ -93,21 +94,15 @@ class TrashApp(tk.Tk):
 
     def lock_trash_button_callback(self):
         self.put_trash_button.state(['disabled'])
+        self.lock_trash_button.state(['disabled'])
         self.is_trash_locked = True
         self._bridge_callback()
 
     def unlock_trash(self):
         self.put_trash_button.state(['!disabled'])
+        self.lock_trash_button.state(['!disabled'])
         self.is_trash_locked = False
         self._bridge_callback()
-
-    @staticmethod
-    def _check_int(string):
-        try:
-            int(string)
-            return True
-        except ValueError:
-            return False
 
 
 # myapp = TrashApp()

@@ -3,6 +3,7 @@ import select
 import json
 import config
 import utils
+import server_messages
 from threading import Thread
 
 
@@ -15,7 +16,7 @@ class Server:
         self._number_of_clients = 0
         self.readers = [self.server_socket]
         self.writers = list()
-        self.command_list = ['clientes', 'sair', 'travar', 'help', 'socket']
+        self.command_list = ['clientes', 'sair', 'travar', 'help', 'socket', 'destravar']
 
     def prepare_for_connection(self):
         self.server_socket.bind((config.HOST, config.PORT))
@@ -31,13 +32,6 @@ class Server:
     def close_all_connections(self):  # Test this
         for c in self.readers:
             c.close()
-
-    '''
-    def filter_clients(self):
-        for c in self.trash_clients:
-            if c['client_socket'].fileno() < 0:
-                self.trash_clients.remove(c)
-    '''
 
     def list_clients(self):
         clients = []
@@ -102,12 +96,31 @@ class Server:
                 'trash_status': obj['trash_status'],
             }
 
+    def lock_trash(self, identifier):
+        res = next(item for item in self.trash_clients if item['id'] == identifier)
+        if res:
+            sock = res['client_socket']
+            print(f'sending: {server_messages.load_object_lock_on_json()}')
+            sock.sendall(server_messages.load_object_lock_on_json())
+        else:
+            print('Lixeira não encontrada, verifque a lista de clientes e tente novamente.\n')
+
+    def unlock_trash(self, identifier):
+        res = next(item for item in self.trash_clients if item['id'] == identifier)
+        if res:
+            sock = res['client_socket']
+            print(f'sending: {server_messages.load_object_unlock_on_json()}')
+            sock.sendall(server_messages.load_object_unlock_on_json())
+        else:
+            print('Lixeira não encontrada, verifque a lista de clientes e tente novamente.\n')
+
     def run(self):
         try:
             self.thread1 = Thread(target=self._run)
             self.thread1.start()
             while True:
-                command = str(input('Digite o comando: \n')).lower()
+                command_list = str(input('Digite o comando: \n')).lower().split(' ')
+                command = command_list[0]
                 if command in self.command_list:
                     utils.clear_terminal()
                     if command == 'sair':
@@ -119,6 +132,16 @@ class Server:
                         print('\n')
                     elif command == 'socket':
                         print(self.trash_clients)
+                    elif command == 'travar':
+                        if len(command_list) != 2 or not utils.is_int(command_list[1]):
+                            print('Argumentos fornecidos são inválidos')
+                        else:
+                            self.lock_trash(int(command_list[1]))
+                    elif command == 'destravar':
+                        if len(command_list) != 2 or not utils.is_int(command_list[1]):
+                            print('Argumentos fornecidos são inválidos')
+                        else:
+                            self.unlock_trash(int(command_list[1]))
 
                 else:
                     print('Comando não encontrado.\n')
@@ -198,4 +221,4 @@ if __name__ == '__main__':
     server = Server()
     server.prepare_for_connection()
     server.run()
-    server.disconnect()  # Remove this
+    #  server.disconnect()  # Remove this

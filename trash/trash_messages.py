@@ -9,7 +9,7 @@ def load_object_start_on_json():
         'mac': utils.get_mac_address()
     }
     obj = json.dumps(start_info)
-    return obj
+    return obj.encode("utf-8")
 
 
 def load_object_update_on_json(trash_capacity, trash_filled, trash_status):
@@ -22,7 +22,7 @@ def load_object_update_on_json(trash_capacity, trash_filled, trash_status):
         'mac': utils.get_mac_address()
     }
     obj = json.dumps(update_info)
-    return obj
+    return obj.encode("utf-8")
 
 
 def load_object_close_on_json():
@@ -32,4 +32,4 @@ def load_object_close_on_json():
         'mac': utils.get_mac_address()
     }
     obj = json.dumps(close_info)
-    return obj
+    return obj.encode("utf-8")

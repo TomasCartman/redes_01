@@ -1,3 +1,4 @@
+import json
 import select
 import socket
 import config
@@ -5,8 +6,10 @@ from threading import Thread
 
 
 class Trash:
-    def __init__(self):
+    def __init__(self, lock_callback, unlock_callback):
         self.thread1 = None
+        self.lock_callback = lock_callback
+        self.unlock_callback = unlock_callback
         self.trash_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.inputs = []
         self.outputs = []
@@ -25,6 +28,12 @@ class Trash:
         self.thread1 = None
         self.trash_socket.close()
 
+    def _lock_trash(self):
+        self.lock_callback()
+
+    def _unlock_trash(self):
+        self.unlock_callback()
+
     def send_message_to_server(self, s, message):
         if type(message) is not bytes:  # Remove this (?)
             message = bytes(message, "utf-8")
@@ -32,14 +41,15 @@ class Trash:
         print(f'Sending: {message}')
         self.message = ''
         self.outputs.remove(s)
-        self.inputs.append(s)
+        #  self.inputs.append(s)
 
     def receive_message_from_server(self, s):
         try:
             server_response = s.recv(config.CHUNK_SIZE)
-            self.inputs.remove(s)
+            #  self.inputs.remove(s)
             if server_response:
-                return server_response.decode("utf-8")
+                response_decoded = server_response.decode("utf-8")
+                return json.loads(response_decoded)
         except Exception as err:
             print('An error occurred while trying to receive a message from the server: ', err)
             self.disconnect()
@@ -72,6 +82,10 @@ class Trash:
                 if s == self.trash_socket and s.fileno() > 0:  # Test this
                     data = self.receive_message_from_server(s)
                     print(data)
+                    if data['type'] == 'lock':
+                        self._lock_trash()
+                    elif data['type'] == 'unlock':
+                        self._unlock_trash()
 
             for s in exceptional:
                 if s in self.inputs:
