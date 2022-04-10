@@ -1,4 +1,3 @@
-import time
 import trash
 import view
 import trash_messages
@@ -27,9 +26,7 @@ class Bridge:
 
     def on_close_window_callback(self):
         print('Disconnecting...')
-        self.send_message_close_to_server()
-        time.sleep(1)
-        self.main_trash.disconnect()
+        self.main_trash.disconnect(self.main_trash.on_disconnect)
 
     def on_server_order_to_lock(self):
         self.main_view.lock_trash_button_callback()
@@ -38,7 +35,7 @@ class Bridge:
         self.main_view.unlock_trash()
 
     def trash_connect_and_run(self):
-        self.main_trash.connect()
+        self.main_trash.connect(self.main_trash.on_connect)
         self.main_trash.run()
         self.send_message_start_to_server()
 

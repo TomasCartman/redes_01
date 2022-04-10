@@ -1,8 +1,8 @@
 import time
 from threading import Thread
-from client_folder import client
+import client
 import select
-from truck_folder import truck_messages
+import truck_messages
 
 
 class Truck(client.Client):

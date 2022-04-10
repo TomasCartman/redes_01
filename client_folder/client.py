@@ -1,7 +1,6 @@
 import socket
-from client_folder import config
+import config
 import json
-from threading import Thread
 
 
 def _null():
@@ -47,18 +46,8 @@ class Client:
             print('An error occurred while trying to receive a message from the server: ', err)
             self.disconnect()
 
-    def run(self):  # make pass
-        try:
-            self.thread1 = Thread(target=self._run)
-            self.thread1.start()
-
-        except KeyboardInterrupt:
-            print('Keyboard interrupt')
-            self.disconnect()
-
-        except Exception as err:
-            print(f'Error: {err}')
-            self.disconnect()
+    def run(self):
+        pass
 
     def _run(self):
         pass

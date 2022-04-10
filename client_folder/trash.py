@@ -1,32 +1,15 @@
-import json
+import trash_messages
+import time
 import select
-import socket
-import config
+import client
 from threading import Thread
 
 
-class Trash:
+class Trash(client.Client):
     def __init__(self, lock_callback, unlock_callback):
-        self.thread1 = None
+        super().__init__()
         self.lock_callback = lock_callback
         self.unlock_callback = unlock_callback
-        self.trash_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.inputs = []
-        self.outputs = []
-        self.message = ''
-
-    def connect(self):
-        try:
-            self.trash_socket.connect((config.HOST, config.PORT))
-            print(f'Connect at {config.HOST}:{config.PORT}')
-            self.trash_socket.setblocking(False)
-            self.inputs.append(self.trash_socket)
-        except Exception as err:
-            print('An error occurred while trying to connect to the server: ', err)
-
-    def disconnect(self):
-        self.thread1 = None
-        self.trash_socket.close()
 
     def _lock_trash(self):
         self.lock_callback()
@@ -34,21 +17,12 @@ class Trash:
     def _unlock_trash(self):
         self.unlock_callback()
 
-    def send_message_to_server(self, s, message):
-        s.sendall(message)
-        print(f'Sending: {message}')
-        self.message = ''
-        self.outputs.remove(s)
+    def on_connect(self):
+        self.message = trash_messages.dumps_object_start_on_json()
 
-    def receive_message_from_server(self, s):
-        try:
-            server_response = s.recv(config.CHUNK_SIZE)
-            if server_response:
-                response_decoded = server_response.decode("utf-8")
-                return json.loads(response_decoded)
-        except Exception as err:
-            print('An error occurred while trying to receive a message from the server: ', err)
-            self.disconnect()
+    def on_disconnect(self):
+        self.message = trash_messages.dumps_object_close_on_json()
+        time.sleep(1)
 
     def run(self):
         try:
@@ -66,7 +40,7 @@ class Trash:
     def _run(self):
         while True:
             if self.message:
-                self.outputs.append(self.trash_socket)
+                self.outputs.append(self.main_socket)
             readable, writeable, exceptional = select.select(self.inputs, self.outputs, self.inputs, 0.5)
 
             for s in writeable:
@@ -75,7 +49,7 @@ class Trash:
                 self.send_message_to_server(s, self.message)
 
             for s in readable:
-                if s == self.trash_socket and s.fileno() > 0:
+                if s == self.main_socket and s.fileno() > 0:
                     data = self.receive_message_from_server(s)
                     print(data)
                     if data['type'] == 'lock':
