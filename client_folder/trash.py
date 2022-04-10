@@ -6,10 +6,11 @@ from threading import Thread
 
 
 class Trash(client.Client):
-    def __init__(self, lock_callback, unlock_callback):
+    def __init__(self, lock_callback, unlock_callback, on_error):
         super().__init__()
         self.lock_callback = lock_callback
         self.unlock_callback = unlock_callback
+        self.on_error = on_error
 
     def _lock_trash(self):
         self.lock_callback()
@@ -32,10 +33,12 @@ class Trash(client.Client):
         except KeyboardInterrupt:
             print('Keyboard interrupt')
             self.disconnect()
+            self.on_error()
 
         except Exception as err:
             print(f'Error: {err}')
             self.disconnect()
+            self.on_error()
 
     def _run(self):
         while True:
@@ -51,11 +54,16 @@ class Trash(client.Client):
             for s in readable:
                 if s == self.main_socket and s.fileno() > 0:
                     data = self.receive_message_from_server(s)
-                    print(data)
-                    if data['type'] == 'lock':
-                        self._lock_trash()
-                    elif data['type'] == 'unlock':
-                        self._unlock_trash()
+                    if data:
+                        print(data)
+                        if data['type'] == 'lock':
+                            self._lock_trash()
+                        elif data['type'] == 'unlock':
+                            self._unlock_trash()
+                    else:
+                        print('Something went wrong. Closing connection')
+                        self.disconnect()
+                        self.on_error()
 
             for s in exceptional:
                 if s in self.inputs:

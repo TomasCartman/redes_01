@@ -55,7 +55,11 @@ class Truck(client.Client):
             for s in readable:
                 if s == self.main_socket and s.fileno() > 0:
                     data = self.receive_message_from_server(s)
-                    print(data)
+                    if data:
+                        print(data)
+                    else:
+                        print('Something went wrong. Closing connection')
+                        self.disconnect()
 
             if self.thread1 is None:
                 break

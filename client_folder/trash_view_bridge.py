@@ -5,7 +5,7 @@ import trash_messages
 
 class Bridge:
     def __init__(self):
-        self.main_trash = trash.Trash(self.on_server_order_to_lock, self.on_server_order_to_unlock)
+        self.main_trash = trash.Trash(self.on_server_order_to_lock, self.on_server_order_to_unlock, self.on_trash_error)
         self.main_view = view.TrashApp(self.on_view_change_callback, self.on_close_window_callback)
 
     def on_view_change_callback(self, trash_capacity, trash_filled, trash_status):
@@ -33,6 +33,9 @@ class Bridge:
 
     def on_server_order_to_unlock(self):
         self.main_view.unlock_trash()
+
+    def on_trash_error(self):
+        self.main_view.destroy()
 
     def trash_connect_and_run(self):
         self.main_trash.connect(self.main_trash.on_connect)

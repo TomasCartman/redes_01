@@ -15,7 +15,7 @@ class Client:
         self.outputs = []
         self.message = ''
 
-    def connect(self, on_connect):
+    def connect(self, on_connect=_null):
         try:
             self.main_socket.connect((config.HOST, config.PORT))
             print(f'Connect at {config.HOST}:{config.PORT}')
