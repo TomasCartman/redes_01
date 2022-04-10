@@ -1,5 +1,5 @@
 import tkinter as tk
-from client_folder import utils
+import utils
 from tkinter import ttk
 from tkinter.messagebox import showerror
 
@@ -75,11 +75,18 @@ class TrashApp(tk.Tk):
             self.actual_trash += 1
             self._change_actual_trash_label()
             self._bridge_callback()
+            if self._should_auto_lock_trash():
+                self.lock_trash_button_callback()
 
     def clear_trash_button_callback(self):
         self.actual_trash = 0
         self._change_actual_trash_label()
         self._bridge_callback()
+
+    def _should_auto_lock_trash(self):
+        if self.trash_capacity != 0 and self.trash_capacity == self.actual_trash:
+            return True
+        return False
 
     def _change_actual_trash_label(self):
         self.actual_trash_label['text'] = 'Quantidade de lixo atual: ' + str(self.actual_trash)
@@ -103,7 +110,3 @@ class TrashApp(tk.Tk):
         self.lock_trash_button.state(['!disabled'])
         self.is_trash_locked = False
         self._bridge_callback()
-
-
-# myapp = TrashApp()
-# myapp.mainloop()

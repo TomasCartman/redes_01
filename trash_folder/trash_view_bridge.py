@@ -1,12 +1,12 @@
 import time
-import trash_folder
+import trash
 import view
 import trash_messages
 
 
 class Bridge:
     def __init__(self):
-        self.main_trash = trash_folder.Trash(self.on_server_order_to_lock, self.on_server_order_to_unlock)
+        self.main_trash = trash.Trash(self.on_server_order_to_lock, self.on_server_order_to_unlock)
         self.main_view = view.TrashApp(self.on_view_change_callback, self.on_close_window_callback)
 
     def on_view_change_callback(self, trash_capacity, trash_filled, trash_status):

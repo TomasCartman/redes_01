@@ -1,5 +1,5 @@
 import json
-from client_folder import utils
+import utils
 
 
 def dumps_object_start_on_json():
