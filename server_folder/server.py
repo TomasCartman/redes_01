@@ -7,6 +7,19 @@ import server_messages
 from threading import Thread
 
 
+def print_trash_client(client_list):
+    for c in client_list:
+        trash_percentage = (c["trash_filled"] / c["trash_capacity"]) * 100
+        print(f'Id: {c["id"]}')
+        print(f'Address: {c["ip_address"]} ou Mac: {c["mac"]}')
+        print(f'Lixeira {trash_percentage:,.2f}% cheia ({c["trash_filled"]}/{c["trash_capacity"]})')
+        print(f'Lixeira {"travada" if c["trash_status"] else "destravada"}\n')
+
+
+def print_help():
+    pass
+
+
 class Server:
     def __init__(self):
         self.thread1 = None
@@ -16,7 +29,9 @@ class Server:
         self._number_of_clients = 0
         self.readers = [self.server_socket]
         self.writers = list()
-        self.command_list = ['clientes', 'sair', 'travar', 'help', 'socket', 'destravar', 'caminhao', 'lista']
+        self.list_to_send_to_truck = list()
+        self.command_list = ['clientes', 'sair', 'travar', 'help', 'socket', 'destravar', 'caminhao', 'gerar_lista',
+                             'enviar_caminhao', 'lixeiras', 'modificar_lista', 'lista', 'enviar_caminhao']
 
     def prepare_for_connection(self):
         self.server_socket.bind((config.HOST, config.PORT))
@@ -52,12 +67,7 @@ class Server:
         clients = self.list_clients()
         number_of_clients = len(clients)
         print(f'Clientes: [{number_of_clients}]\n')
-        for c in clients:
-            trash_percentage = (c["trash_filled"] / c["trash_capacity"]) * 100
-            print(f'Id: {c["id"]}')
-            print(f'Address: {c["ip_address"]} ou Mac: {c["mac"]}')
-            print(f'Lixeira {trash_percentage:,.2f}% cheia ({c["trash_filled"]}/{c["trash_capacity"]})')
-            print(f'Lixeira {"travada" if c["trash_status"] else "destravada"}\n')
+        print_trash_client(clients)
 
     def order_trashes(self):
         trash_clients = self.list_clients()
@@ -65,17 +75,36 @@ class Server:
                                        key=lambda c: (int(c['trash_filled']) / int(c['trash_capacity'])))
         return ordered_trash_clients
 
+    def filter_trash_list_by_threshold(self, percentage=0.75):
+        ordered_trash_clients = self.order_trashes()
+        filtered_ordered_trash_clients = []
+        for c in ordered_trash_clients:
+            if int(c['trash_filled']) / int(c['trash_capacity']) >= percentage:
+                filtered_ordered_trash_clients.append(c)
+        return filtered_ordered_trash_clients
+
+    def make_list_to_send_to_truck(self):
+        filtered_ordered_trash_clients = self.filter_trash_list_by_threshold()
+        self.list_to_send_to_truck = filtered_ordered_trash_clients
+
     def print_ordered_trashes(self):
         ordered_trash_clients = self.order_trashes()
-        for c in ordered_trash_clients:
-            trash_percentage = (c["trash_filled"] / c["trash_capacity"]) * 100
-            print(f'Id: {c["id"]}')
-            print(f'Address: {c["ip_address"]} ou Mac: {c["mac"]}')
-            print(f'Lixeira {trash_percentage:,.2f}% cheia ({c["trash_filled"]}/{c["trash_capacity"]})')
-            print(f'Lixeira {"travada" if c["trash_status"] else "destravada"}\n')
+        print_trash_client(ordered_trash_clients)
 
-    def send_ordered_trashes_to_truck(self):
-        ordered_trash_clients = self.order_trashes()
+    def print_to_send_to_truck_list(self):
+        print_trash_client(self.list_to_send_to_truck)
+
+    def send_trash_list_to_truck(self):
+        if len(self.truck_clients) > 0:
+            trashes_list = self.list_to_send_to_truck
+            sock = self.truck_clients[0]['client_socket']
+            list_to_truck_info = server_messages.object_list_of_trashes_skeleton()
+            list_to_truck_info['list'] = trashes_list
+            obj = json.dumps(list_to_truck_info)
+            obj_encoded = obj.encode("utf-8")
+            sock.sendall(obj_encoded)
+        else:
+            print('Não há um caminhão conectado')
 
     def handle_start_of_client(self, obj, sock):
         print('Start of client')
@@ -163,7 +192,20 @@ class Server:
                     elif command == 'caminhao':
                         print(self.truck_clients)
                     elif command == 'lista':
+                        self.print_to_send_to_truck_list()
+                    elif command == 'lixeiras':
                         self.print_ordered_trashes()
+                    elif command == 'gerar_lista':
+                        self.make_list_to_send_to_truck()
+                        print('A lista foi criada')
+                    elif command == 'modificar_lista':
+                        if len(command_list) != 3 or not utils.is_int(command_list[1]) or not utils.is_int(
+                                command_list[2]):
+                            print('Argumentos fornecidos são inválidos')
+                        else:
+                            pass
+                    elif command == 'enviar_caminhao':
+                        self.send_trash_list_to_truck()
                 else:
                     print('Comando não encontrado.\n')
         except KeyboardInterrupt:
@@ -206,8 +248,6 @@ class Server:
                     self.readers.remove(s)
                     s.close()
                     print(f'An error occurred (readable): {err}')
-                finally:
-                    pass
 
             for s in writeable:
                 try:
@@ -216,8 +256,6 @@ class Server:
                     self.writers.remove(s)
                 except Exception as err:
                     print(f'An error occurred (writable): {err}')
-                finally:
-                    pass
 
             for s in exceptional:
                 pass

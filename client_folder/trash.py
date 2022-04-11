@@ -64,12 +64,12 @@ class Trash(client.Client):
                         print('Something went wrong. Closing connection')
                         self.disconnect()
                         self.on_error()
-
+            '''
             for s in exceptional:
                 if s in self.inputs:
                     self.inputs.remove(s)
                 if s in self.outputs:
                     self.outputs.remove(s)
-
+            '''
             if self.thread1 is None:
                 break

@@ -8,6 +8,7 @@ import truck_messages
 class Truck(client.Client):
     def __init__(self):
         super().__init__()
+        self.trash_list = []
         self.command_list = ['sair', 'listar']
 
     def on_connect(self):
@@ -30,7 +31,7 @@ class Truck(client.Client):
                         self.disconnect(self.on_disconnect)
                         break
                     elif command == 'listar':
-                        print('listar')
+                        print(self.trash_list)
 
         except KeyboardInterrupt:
             print('Keyboard interrupt')
@@ -57,6 +58,8 @@ class Truck(client.Client):
                     data = self.receive_message_from_server(s)
                     if data:
                         print(data)
+                        if data['type'] == 'list':
+                            self.trash_list = data['list']
                     else:
                         print('Something went wrong. Closing connection')
                         self.disconnect()
