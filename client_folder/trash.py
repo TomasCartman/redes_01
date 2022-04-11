@@ -44,6 +44,7 @@ class Trash(client.Client):
         while True:
             if self.message:
                 self.outputs.append(self.main_socket)
+
             readable, writeable, exceptional = select.select(self.inputs, self.outputs, self.inputs, 0.5)
 
             for s in writeable:
@@ -58,8 +59,10 @@ class Trash(client.Client):
                         print(data)
                         if data['type'] == 'lock':
                             self._lock_trash()
+
                         elif data['type'] == 'unlock':
                             self._unlock_trash()
+
                     else:
                         print('Something went wrong. Closing connection')
                         self.disconnect()

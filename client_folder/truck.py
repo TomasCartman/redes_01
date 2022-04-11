@@ -1,15 +1,17 @@
 import time
-from threading import Thread
 import client
 import select
 import truck_messages
+import utils
+from threading import Thread
+
+command_list = ['sair', 'listar']
 
 
 class Truck(client.Client):
     def __init__(self):
         super().__init__()
         self.trash_list = []
-        self.command_list = ['sair', 'listar']
 
     def on_connect(self):
         self.message = truck_messages.dumps_object_start_on_json()
@@ -24,12 +26,13 @@ class Truck(client.Client):
             self.thread1.start()
             while True:
                 command = str(input('Digite o comando: \n')).lower()
-                if command in self.command_list:
-                    #  Clear terminal
+                if command in command_list:
+                    utils.clear_terminal()
                     if command == 'sair':
                         print('Fechando conexão...\n')
                         self.disconnect(self.on_disconnect)
                         break
+
                     elif command == 'listar':
                         print(self.trash_list)
 

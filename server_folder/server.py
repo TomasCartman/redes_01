@@ -4,20 +4,11 @@ import json
 import config
 import utils
 import server_messages
+import terminal_helper
 from threading import Thread
 
-
-def print_trash_client(client_list):
-    for c in client_list:
-        trash_percentage = (c["trash_filled"] / c["trash_capacity"]) * 100
-        print(f'Id: {c["id"]}')
-        print(f'Address: {c["ip_address"]} ou Mac: {c["mac"]}')
-        print(f'Lixeira {trash_percentage:,.2f}% cheia ({c["trash_filled"]}/{c["trash_capacity"]})')
-        print(f'Lixeira {"travada" if c["trash_status"] else "destravada"}\n')
-
-
-def print_help():
-    pass
+command_list = ['clientes', 'sair', 'travar', 'help', 'socket', 'destravar', 'caminhao', 'gerar_lista',
+                'enviar_caminhao', 'lixeiras', 'modificar_lista', 'lista']
 
 
 class Server:
@@ -30,8 +21,6 @@ class Server:
         self.readers = [self.server_socket]
         self.writers = list()
         self.list_to_send_to_truck = list()
-        self.command_list = ['clientes', 'sair', 'travar', 'help', 'socket', 'destravar', 'caminhao', 'gerar_lista',
-                             'enviar_caminhao', 'lixeiras', 'modificar_lista', 'lista', 'enviar_caminhao']
 
     def prepare_for_connection(self):
         self.server_socket.bind((config.HOST, config.PORT))
@@ -40,11 +29,11 @@ class Server:
         print(f'Listing to port {config.PORT}')
 
     def disconnect(self):
+        print('Fechando conexão...\n')
         self.thread1 = None
         self.close_all_connections()
-        self.server_socket.close()
 
-    def close_all_connections(self):  # Test this
+    def close_all_connections(self):
         for c in self.readers:
             c.close()
 
@@ -65,9 +54,8 @@ class Server:
 
     def print_clients(self):
         clients = self.list_clients()
-        number_of_clients = len(clients)
-        print(f'Clientes: [{number_of_clients}]\n')
-        print_trash_client(clients)
+        print(f'Clientes: [{len(clients)}]\n')
+        terminal_helper.print_trash_client(clients)
 
     def order_trashes(self):
         trash_clients = self.list_clients()
@@ -83,16 +71,20 @@ class Server:
                 filtered_ordered_trash_clients.append(c)
         return filtered_ordered_trash_clients
 
+    def modify_list_to_send_to_truck(self, identifier, position):
+        pass
+
     def make_list_to_send_to_truck(self):
         filtered_ordered_trash_clients = self.filter_trash_list_by_threshold()
         self.list_to_send_to_truck = filtered_ordered_trash_clients
+        print('A lista foi criada')
 
     def print_ordered_trashes(self):
         ordered_trash_clients = self.order_trashes()
-        print_trash_client(ordered_trash_clients)
+        terminal_helper.print_trash_client(ordered_trash_clients)
 
     def print_to_send_to_truck_list(self):
-        print_trash_client(self.list_to_send_to_truck)
+        terminal_helper.print_trash_client(self.list_to_send_to_truck)
 
     def send_trash_list_to_truck(self):
         if len(self.truck_clients) > 0:
@@ -161,53 +153,69 @@ class Server:
         else:
             print('Lixeira não encontrada, verifque a lista de clientes e tente novamente.\n')
 
+    def get_command_and_run_functions(self):
+        command_typed = str(input('Digite o comando: \n')).lower().split(' ')
+        command = command_typed[0]
+        if command in command_list:
+            utils.clear_terminal()
+            if command == 'sair':
+                self.disconnect()
+
+            elif command == 'help':
+                terminal_helper.print_help()
+
+            elif command == 'clientes':
+                self.print_clients()
+
+            elif command == 'socket':
+                print(self.trash_clients)
+
+            elif command == 'travar':
+                if len(command_typed) != 2 or not utils.is_int(command_typed[1]):
+                    print('Argumentos fornecidos são inválidos')
+                else:
+                    self.lock_trash(int(command_typed[1]))
+
+            elif command == 'destravar':
+                if len(command_typed) != 2 or not utils.is_int(command_typed[1]):
+                    print('Argumentos fornecidos são inválidos')
+                else:
+                    self.unlock_trash(int(command_typed[1]))
+
+            elif command == 'caminhao':
+                print(self.truck_clients)
+
+            elif command == 'lista':
+                self.print_to_send_to_truck_list()
+
+            elif command == 'lixeiras':
+                self.print_ordered_trashes()
+
+            elif command == 'gerar_lista':
+                self.make_list_to_send_to_truck()
+
+            elif command == 'modificar_lista':
+                if len(command_typed) != 3 or not utils.is_int(command_typed[1]) or not utils.is_int(
+                        command_typed[2]):
+                    print('Argumentos fornecidos são inválidos')
+                else:
+                    self.modify_list_to_send_to_truck(command_typed[1], command_typed[2])
+
+            elif command == 'enviar_caminhao':
+                self.send_trash_list_to_truck()
+
+        else:
+            print('Comando não encontrado.\n')
+
     def run(self):
         try:
             self.thread1 = Thread(target=self._run)
             self.thread1.start()
             while True:
-                command_list = str(input('Digite o comando: \n')).lower().split(' ')
-                command = command_list[0]
-                if command in self.command_list:
-                    utils.clear_terminal()
-                    if command == 'sair':
-                        print('Fechando conexão...\n')
-                        self.disconnect()
-                        break
-                    elif command == 'clientes':
-                        self.print_clients()
-                        print('\n')
-                    elif command == 'socket':
-                        print(self.trash_clients)
-                    elif command == 'travar':
-                        if len(command_list) != 2 or not utils.is_int(command_list[1]):
-                            print('Argumentos fornecidos são inválidos')
-                        else:
-                            self.lock_trash(int(command_list[1]))
-                    elif command == 'destravar':
-                        if len(command_list) != 2 or not utils.is_int(command_list[1]):
-                            print('Argumentos fornecidos são inválidos')
-                        else:
-                            self.unlock_trash(int(command_list[1]))
-                    elif command == 'caminhao':
-                        print(self.truck_clients)
-                    elif command == 'lista':
-                        self.print_to_send_to_truck_list()
-                    elif command == 'lixeiras':
-                        self.print_ordered_trashes()
-                    elif command == 'gerar_lista':
-                        self.make_list_to_send_to_truck()
-                        print('A lista foi criada')
-                    elif command == 'modificar_lista':
-                        if len(command_list) != 3 or not utils.is_int(command_list[1]) or not utils.is_int(
-                                command_list[2]):
-                            print('Argumentos fornecidos são inválidos')
-                        else:
-                            pass
-                    elif command == 'enviar_caminhao':
-                        self.send_trash_list_to_truck()
-                else:
-                    print('Comando não encontrado.\n')
+                self.get_command_and_run_functions()
+                if self.thread1 is None:
+                    break
+
         except KeyboardInterrupt:
             print('KeyboardInterrupt')
             self.disconnect()
@@ -230,16 +238,20 @@ class Server:
                         client_socket.setblocking(False)
                         print(f'Connection from: {address[0]}:{address[1]}')
                         self.readers.append(client_socket)
+
                     else:  # An already accepted client socket is sending a message
                         data = s.recv(config.CHUNK_SIZE)
                         if data:
                             obj = json.loads(data)
                             if obj['type'] == 'start':  # First contact of the server and client
                                 self.handle_start_of_client(obj, s)
+
                             elif obj['type'] == 'update':  # A client known by the server is updating its status
                                 self.handle_update_of_client(obj, s)
+
                             else:  # The last contact of the client with the server
                                 self.handle_close_of_client(obj, s)
+
                         else:
                             s.close()
                             self.readers.remove(s)
@@ -257,12 +269,8 @@ class Server:
                 except Exception as err:
                     print(f'An error occurred (writable): {err}')
 
-            for s in exceptional:
-                pass
-
 
 if __name__ == '__main__':
     server = Server()
     server.prepare_for_connection()
     server.run()
-    #  server.disconnect()  # Remove this

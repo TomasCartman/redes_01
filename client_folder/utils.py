@@ -1,3 +1,4 @@
+import os
 import re
 import socket
 import uuid
@@ -20,3 +21,7 @@ def is_int(string):
         return True
     except ValueError:
         return False
+
+
+def clear_terminal():
+    os.system('cls' if os.name == 'nt' else 'clear')
