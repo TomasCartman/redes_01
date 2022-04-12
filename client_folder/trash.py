@@ -63,6 +63,10 @@ class Trash(client.Client):
                         elif data['type'] == 'unlock':
                             self._unlock_trash()
 
+                        elif data['type'] == 'close':
+                            self.disconnect()
+                            self.on_error()
+
                     else:
                         print('Something went wrong. Closing connection')
                         self.disconnect()

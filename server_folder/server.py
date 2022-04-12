@@ -1,6 +1,7 @@
 import socket
 import select
 import json
+import time
 import config
 import utils
 import server_messages
@@ -8,7 +9,22 @@ import terminal_helper
 from threading import Thread
 
 command_list = ['clientes', 'sair', 'travar', 'help', 'socket', 'destravar', 'caminhao', 'gerar_lista',
-                'enviar_caminhao', 'lixeiras', 'modificar_lista', 'lista']
+                'enviar_caminhao', 'lixeiras', 'modificar_lista', 'lista', 'clean']
+
+
+def list_client(trash_client):
+    if 'trash' in trash_client:
+        client = {
+            'id': trash_client['id'],
+            'ip_address': trash_client['address'],
+            'mac': trash_client['mac'],
+            'trash_capacity': trash_client['trash']['trash_capacity'],
+            'trash_filled': trash_client['trash']['trash_filled'],
+            'trash_status': trash_client['trash']['trash_status']
+        }
+        return client
+    else:
+        return False
 
 
 class Server:
@@ -30,32 +46,27 @@ class Server:
 
     def disconnect(self):
         print('Fechando conexão...\n')
+        self.close_all_client_connections()
         self.thread1 = None
-        self.close_all_connections()
+        self.server_socket.close()
 
-    def close_all_connections(self):
+    def close_all_client_connections(self):
         for c in self.readers:
-            c.close()
+            if c != self.server_socket:
+                self.readers.remove(c)
+                c.sendall(server_messages.dumps_object_close_on_json())
+        time.sleep(1)
+        for c in self.readers:
+            if c != self.server_socket:
+                c.close()
 
     def list_clients(self):
         clients = []
         for c in self.trash_clients:
-            if 'trash' in c:
-                client = {
-                    'id': c['id'],
-                    'ip_address': c['address'],
-                    'mac': c['mac'],
-                    'trash_capacity': c['trash']['trash_capacity'],
-                    'trash_filled': c['trash']['trash_filled'],
-                    'trash_status': c['trash']['trash_status']
-                }
+            client = list_client(c)
+            if client:
                 clients.append(client)
         return clients
-
-    def print_clients(self):
-        clients = self.list_clients()
-        print(f'Clientes: [{len(clients)}]\n')
-        terminal_helper.print_trash_client(clients)
 
     def order_trashes(self):
         trash_clients = self.list_clients()
@@ -71,13 +82,10 @@ class Server:
                 filtered_ordered_trash_clients.append(c)
         return filtered_ordered_trash_clients
 
-    def modify_list_to_send_to_truck(self, identifier, position):
-        pass
-
-    def make_list_to_send_to_truck(self):
-        filtered_ordered_trash_clients = self.filter_trash_list_by_threshold()
-        self.list_to_send_to_truck = filtered_ordered_trash_clients
-        print('A lista foi criada')
+    def print_clients(self):
+        clients = self.list_clients()
+        print(f'Clientes: [{len(clients)}]\n')
+        terminal_helper.print_trash_client(clients)
 
     def print_ordered_trashes(self):
         ordered_trash_clients = self.order_trashes()
@@ -85,6 +93,43 @@ class Server:
 
     def print_to_send_to_truck_list(self):
         terminal_helper.print_trash_client(self.list_to_send_to_truck)
+
+    def make_list_to_send_to_truck(self):
+        filtered_ordered_trash_clients = self.filter_trash_list_by_threshold()
+        self.list_to_send_to_truck = filtered_ordered_trash_clients
+        print('A lista foi criada')
+
+    def modify_list_to_send_to_truck(self, identifier, position):
+        position = int(position)
+        identifier = int(identifier)
+        res = next((item for item in self.list_to_send_to_truck if item['id'] == identifier), False)
+        if res:  # Trash is already in the list, change its position
+            trash_index = self.list_to_send_to_truck.index(res)
+            if position == trash_index:  # The trash is already on the position it should
+                print(f'Lixeira {identifier}: {trash_index} -> {position}')
+
+            elif position >= len(self.list_to_send_to_truck):  # It will be inserted on the last position
+                self.list_to_send_to_truck.remove(res)
+                self.list_to_send_to_truck.append(res)
+
+            else:
+                if position > trash_index:
+                    self.list_to_send_to_truck.remove(res)
+                    self.list_to_send_to_truck.insert(position, res)
+
+                else:
+                    self.list_to_send_to_truck.remove(res)
+                    self.list_to_send_to_truck.insert(position, res)
+
+        else:  # Trash is not on the list, include it
+            trash_client = next((item for item in self.trash_clients if item['id'] == identifier), False)
+            if trash_client:
+                client = list_client(trash_client)
+                if client:
+                    self.list_to_send_to_truck.insert(position, client)
+
+            else:
+                print('Id não encontrado')
 
     def send_trash_list_to_truck(self):
         if len(self.truck_clients) > 0:
@@ -95,6 +140,7 @@ class Server:
             obj = json.dumps(list_to_truck_info)
             obj_encoded = obj.encode("utf-8")
             sock.sendall(obj_encoded)
+            self.list_to_send_to_truck = []
         else:
             print('Não há um caminhão conectado')
 
@@ -136,7 +182,7 @@ class Server:
             }
 
     def lock_trash(self, identifier):
-        res = next(item for item in self.trash_clients if item['id'] == identifier)
+        res = next((item for item in self.trash_clients if item['id'] == identifier), False)
         if res:
             sock = res['client_socket']
             print(f'sending: {server_messages.dumps_object_lock_on_json()}')
@@ -145,7 +191,7 @@ class Server:
             print('Lixeira não encontrada, verifque a lista de clientes e tente novamente.\n')
 
     def unlock_trash(self, identifier):
-        res = next(item for item in self.trash_clients if item['id'] == identifier)
+        res = next((item for item in self.trash_clients if item['id'] == identifier), False)
         if res:
             sock = res['client_socket']
             print(f'sending: {server_messages.dumps_object_unlock_on_json()}')
@@ -195,14 +241,17 @@ class Server:
                 self.make_list_to_send_to_truck()
 
             elif command == 'modificar_lista':
-                if len(command_typed) != 3 or not utils.is_int(command_typed[1]) or not utils.is_int(
-                        command_typed[2]):
+                if len(command_typed) != 3 or not utils.is_int_and_positive(command_typed[1]) \
+                        or not utils.is_int_and_positive(command_typed[2]):
                     print('Argumentos fornecidos são inválidos')
                 else:
                     self.modify_list_to_send_to_truck(command_typed[1], command_typed[2])
 
             elif command == 'enviar_caminhao':
                 self.send_trash_list_to_truck()
+
+            elif command == 'clean':
+                utils.clear_terminal()
 
         else:
             print('Comando não encontrado.\n')
@@ -219,6 +268,7 @@ class Server:
         except KeyboardInterrupt:
             print('KeyboardInterrupt')
             self.disconnect()
+
         except Exception as err:
             print(f'Error: {err}')
             self.disconnect()
@@ -253,11 +303,13 @@ class Server:
                                 self.handle_close_of_client(obj, s)
 
                         else:
+                            if s in self.readers:
+                                self.readers.remove(s)
                             s.close()
-                            self.readers.remove(s)
 
                 except Exception as err:
-                    self.readers.remove(s)
+                    if s in self.readers:
+                        self.readers.remove(s)
                     s.close()
                     print(f'An error occurred (readable): {err}')
 

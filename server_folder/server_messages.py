@@ -26,3 +26,13 @@ def object_list_of_trashes_skeleton():
         'sender': 'server'
     }
     return skeleton_info
+
+
+def dumps_object_close_on_json():
+    close_info = {
+        'type': 'close',
+        'sender': 'server'
+    }
+    obj = json.dumps(close_info)
+    return obj.encode("utf-8")
+
