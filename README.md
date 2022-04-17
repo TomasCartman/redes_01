@@ -44,9 +44,10 @@ O servidor também é simulado no terminal e possui a seguinte lista de comandos
     - [id] = Inteiro >= 0
 - 'gerar_lista' **Cria e redefine uma lista com as lixeiras que devem ser coletadas pelo caminhão, o limiar padrão é 75%** 
 - 'lista' **Mostra a lista que vai ser enviada para o caminhão**
-- 'enviar_lista' **Envia a lista de lixeiras que devem ser coletadas para o caminhão (a lista mostrada pelo comando 'lista')**
+- 'enviar_caminhao' **Envia a lista de lixeiras que devem ser coletadas para o caminhão (a lista mostrada pelo comando 'lista')**
 - 'modificar_lista [id] [posição]' **Modifica a lista que vai ser enviada para o caminhão, colocando a lixeira passada pelo id na posição indicada**
     - [id] = Inteiro >= 0
     - [posição] = Inteiro >= 0
+    - [posição] — > 0 é a primeira posição
     
 Nenhum comando deve ser usado com aspas.

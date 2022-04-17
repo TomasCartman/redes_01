@@ -23,6 +23,6 @@ def print_help():
     print('"gerar_lista" -> Cria e redefine uma lista com as lixeiras que devem ser coletadas pelo caminhão, '
           'o limiar padrão é 75%')
     print('"lista" -> Mostra a lista que vai ser enviada para o caminhão')
-    print('"enviar_lista" -> Envia a lista de lixeiras que devem ser coletadas para o caminhão')
+    print('"enviar_caminhao" -> Envia a lista de lixeiras que devem ser coletadas para o caminhão')
     print('"modificar_lista id posição" -> Modifica a lista que vai ser enviada para o caminhão, colocando a lixeira '
           'passada pelo id na posição indicada\n')

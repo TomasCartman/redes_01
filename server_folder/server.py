@@ -141,6 +141,7 @@ class Server:
             obj_encoded = obj.encode("utf-8")
             sock.sendall(obj_encoded)
             self.list_to_send_to_truck = []
+            print('As lixeiras foram enviadas para o caminhão')
         else:
             print('Não há um caminhão conectado')
 

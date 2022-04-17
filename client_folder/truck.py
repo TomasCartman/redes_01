@@ -3,6 +3,7 @@ import client
 import select
 import truck_messages
 import utils
+import terminal_helper
 from threading import Thread
 
 command_list = ['sair', 'listar']
@@ -20,6 +21,9 @@ class Truck(client.Client):
         self.message = truck_messages.dumps_object_close_on_json()
         time.sleep(1)
 
+    def print_list_of_trashes(self):
+        terminal_helper.print_trash_client(self.trash_list)
+
     def run(self):
         try:
             self.thread1 = Thread(target=self._run)
@@ -34,7 +38,10 @@ class Truck(client.Client):
                         break
 
                     elif command == 'listar':
-                        print(self.trash_list)
+                        self.print_list_of_trashes()
+
+                else:
+                    print('Comando não encontrado')
 
         except KeyboardInterrupt:
             print('Keyboard interrupt')
@@ -63,6 +70,8 @@ class Truck(client.Client):
                         print(data)
                         if data['type'] == 'list':
                             self.trash_list = data['list']
+                            print('Lista de lixeiras recebidas')
+
                     else:
                         print('Something went wrong. Closing connection')
                         self.disconnect()
