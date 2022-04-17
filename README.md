@@ -51,6 +51,6 @@ O servidor também é simulado no terminal e possui a seguinte lista de comandos
     - [id] = Inteiro >= 0
     - [posição] = Inteiro >= 0
     - [posição] — > 0 é a primeira posição
-    - exemplo modificar_lista 3 0
+    - exemplo: modificar_lista 3 0
     
 Nenhum comando ou parte de comando deve ser usado entre aspas ou colchetes.
