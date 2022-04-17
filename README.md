@@ -40,8 +40,10 @@ O servidor também é simulado no terminal e possui a seguinte lista de comandos
 - 'clientes' **Mostra a lista de lixeiras em ordem de conexão**
 - 'travar [id]' **Trava a lixeira com o id que foi passado (olhar IDs em uma das listas de lixeiras)**
     - [id] = Inteiro >= 0
+    - exemplo: travar 2
 - 'destravar [id]' **Destrava a lixeira com o id que foi passado (olhar IDs em uma das listas de lixeiras)**
     - [id] = Inteiro >= 0
+    - exemplo: destravar 1
 - 'gerar_lista' **Cria e redefine uma lista com as lixeiras que devem ser coletadas pelo caminhão, o limiar padrão é 75%** 
 - 'lista' **Mostra a lista que vai ser enviada para o caminhão**
 - 'enviar_caminhao' **Envia a lista de lixeiras que devem ser coletadas para o caminhão (a lista mostrada pelo comando 'lista')**
@@ -49,5 +51,6 @@ O servidor também é simulado no terminal e possui a seguinte lista de comandos
     - [id] = Inteiro >= 0
     - [posição] = Inteiro >= 0
     - [posição] — > 0 é a primeira posição
+    - exemplo modificar_lista 3 0
     
-Nenhum comando deve ser usado com aspas.
+Nenhum comando ou parte de comando deve ser usado entre aspas ou colchetes.
