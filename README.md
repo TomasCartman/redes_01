@@ -1,5 +1,13 @@
 # redes_01
 
+Por padrão a biblioteca Tkinter já vem com a própria instalação do python. Porém, caso o erro "ImportError: No module named tkinter"
+aconteça ao executar a lixeira, ele pode pode ser resolvido instalando o Tkinter com esse comando "sudo apt-get install python3-tk"
+no linux.
+
+---
+
+## Instruções:
+
 O servidor deve ser o primeiro a ser executado. Ele se encontra na pasta **'server_folder'** e pode ser executado
 com o comando **'python server.py'**.
 
